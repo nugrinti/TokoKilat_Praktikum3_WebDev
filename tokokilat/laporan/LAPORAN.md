@@ -1,6 +1,12 @@
 # Laporan audit performa dan interaksi TokoKilat
 
-Tim: ....  Anggota: ....  Tanggal: ....
+Tim: ....  
+Anggota:
+1. Hana Zahirah Syifa - 241524045
+2. Muhammad Fakhri Widodo - 241524053
+3. Nurahma Rahayu - 241524058
+4. Raden Muhammad Farhan Fauzan - 241524059 
+Tanggal:25/09/2026
 Panjang maksimal setara 6 halaman (tidak termasuk lampiran gambar).
 
 ## 1. Ringkasan eksekutif (maks. 150 kata)
