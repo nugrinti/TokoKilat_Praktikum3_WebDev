@@ -94,3 +94,122 @@ Efek samping: Ada ruang kosong permanen jika promo gagal dimuat, slot bisa kuran
 - **Hasil ukur (median 3 kali):** ....
 - **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
 - **Efek samping yang muncul:** ....
+
+## P-04: Tombol "+ Keranjang" tidak merespons — klik berulang menambah item
+
+**Tiket terkait:** TK-1044
+**Tanggal dan hash commit entri ini:** ....
+
+### Sebelum perbaikan
+
+- **Yang teramati di trace (baseline):**
+  Pada skenario S2 (tekan "+ Keranjang" satu kali), track Interactions menunjukkan INP event
+  dengan durasi ~392 ms. Di main thread terlihat satu long task
+  panjang segera setelah klik. Pada bottom-up, fungsi yang mengambil porsi terbesar adalah `f`
+  dari `lacak.min.js` — bukan kode aplikasi sendiri. Tombol baru berubah teksnya menjadi
+  "Ditambahkan ✓" di ujung long task tersebut, bukan di awalnya.
+
+- **Dugaan mekanisme:**
+  `tambahKeKeranjang()` memanggil `window.Lacak.kirim('add_to_cart', ...)` secara **sinkron**
+  sebelum baris `tombol.textContent = 'Ditambahkan ✓'`. SDK Lacak menjalankan fungsi `f()`
+  yang berisi loop 2.000.000 iterasi `Math.imul` (hash FNV) dalam satu task — memblokir
+  main thread seluruhnya.
+
+  Urutan eksekusi yang salah di kode lama:
+  1. `Lacak.kirim()` dipanggil → task SDK dimulai (2 juta iterasi, ~200–400 ms)
+  2. Selama task berjalan: browser tidak bisa merender, tidak bisa memproses event baru
+  3. Task selesai → baru `tombol.textContent = 'Ditambahkan ✓'` dieksekusi
+  4. Frame dirender → pengguna baru melihat konfirmasi
+
+  Klik-klik yang masuk selama jendela ~200–400 ms (sebelum tombol berubah) sudah antre di
+  event queue. Setelah task selesai, tiap klik diproses satu per satu → tiap klik menambah
+  satu item ke keranjang.
+
+  Ini adalah masalah **interaction responsiveness** pada fase JS di rendering pipeline:
+  satu task panjang memblokir seluruh event loop, termasuk rendering opportunity.
+
+- **Rencana perubahan:**
+  1. Pindahkan pembaruan UI (`tombol.textContent`, `classList.add('sudah')`, `tampilkanToast`)
+     ke **sebelum** panggilan `Lacak.kirim()`.
+  2. Tunda `Lacak.kirim()` ke task berikutnya menggunakan `setTimeout(() => { ... }, 0)`.
+     Dengan begitu, frame yang menampilkan "Ditambahkan ✓" sempat dirender sebelum SDK berjalan.
+  3. Batasi riwayat yang dikirim ke SDK ke 50 entri terakhir untuk mengurangi beban komputasi
+     fungsi `t(s)` (yang proporsional terhadap panjang JSON payload).
+
+- **Prediksi terukur:**
+  Setelah perubahan, INP pada S2 turun dari ~392 menjadi < 100 ms, karena task sinkron
+  yang dirasakan pengguna sekarang hanya berisi pembaruan DOM (cepat), bukan 2 juta iterasi SDK.
+  Long task SDK masih ada, tetapi berjalan di task terpisah setelah frame dirender — tidak
+  mempengaruhi INP interaksi tersebut.
+  Efek samping yang mungkin: jika pengguna mematikan tab tepat setelah klik (sebelum
+  setTimeout(0) sempat jalan), event `add_to_cart` tidak akan terkirim ke SDK.
+
+- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:**
+  - *Web Worker untuk SDK*: tidak bisa karena `lacak.min.js` mengakses `window.document`
+    yang tidak tersedia di Worker thread.
+  - *Throttle klik dengan flag global*: bisa mencegah klik ganda, tetapi tidak memberikan
+    umpan balik visual segera — pengguna tetap tidak tahu apakah tombol sudah bereaksi.
+  - *Hapus Lacak.kirim*: melanggar aturan main (setiap event wajib terkirim).
+  ### Sesudah perbaikan
+
+- **Hash commit perbaikan:** ....
+- **Hasil ukur (median 3 kali):** ....
+- **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
+- **Efek samping yang muncul:** ....
+
+## P-05: "Beli sekarang" tiga kali menghasilkan tiga pesanan
+
+**Tiket terkait:** TK-1052
+**Tanggal dan hash commit entri ini:** ....
+
+### Sebelum perbaikan
+
+- **Yang teramati di trace (baseline):**
+  Pada skenario S3 (tekan "Beli sekarang" tiga kali secepat mungkin), panel Network
+  menunjukkan tiga POST request ke `/api/pesanan` yang terpisah. Di terminal server,
+  tercetak tiga baris konfirmasi pesanan berbeda. Di main thread, `tombol.textContent`
+  baru berubah menjadi "Dipesan ✓" sekitar ~350 ms setelah klik pertama — 
+  tepat setelah `await fetch()` selesai.
+
+- **Dugaan mekanisme:**
+  `beliSekarang()` adalah fungsi `async`. Tidak ada mekanisme guard apapun di awal fungsi.
+
+  Urutan kejadian yang salah:
+  1. Klik ke-1 → `beliSekarang()` mulai → `fetch('/api/pesanan')` diawali (async, ~350 ms)
+  2. Selama 350 ms menunggu respons server: tombol masih bertuliskan "Beli sekarang"
+  3. Klik ke-2 (selama 350 ms) → `beliSekarang()` dipanggil lagi (tidak ada yang
+     memblokirnya) → `fetch` kedua dimulai
+  4. Klik ke-3 → `fetch` ketiga dimulai
+  5. Tiga respons datang → tiga `pesanan.id` berbeda → tiga pesanan tersimpan di server
+
+  Ini adalah masalah **user error protection**: tidak ada pelindung terhadap aksi berulang
+  yang tidak disengaja. Pengguna mengira tombol tidak bereaksi (tidak ada feedback visual
+  selama 350 ms) lalu menekan lagi.
+
+- **Rencana perubahan:**
+  1. Tambah guard di baris pertama fungsi: cek `tombol.dataset.sedangProses === '1'`, kalau
+     ya langsung `return`.
+  2. Set `tombol.disabled = true` dan `tombol.textContent = 'Memproses…'` **sebelum**
+     `await fetch()` — beri umpan balik visual segera.
+  3. Set `tombol.dataset.sedangProses = '1'` di awal, hapus di blok `finally`.
+  4. Blok `finally` memastikan tombol selalu aktif kembali, baik fetch berhasil maupun gagal.
+
+- **Prediksi terukur:**
+  Setelah perubahan, S3 menghasilkan tepat **1 pesanan** dari 3 klik cepat. Tombol
+  menampilkan "Memproses…" dan `disabled` langsung setelah klik pertama, sebelum server
+  merespons. INP S3 turun ke < 50 ms (hanya DOM update, tidak ada blocking SDK di jalur kritis
+  karena Lacak.kirim juga ditunda ke setTimeout).
+  Efek samping: bila jaringan lambat dan `fetch` gagal, pengguna tidak bisa mencoba lagi
+  sampai `finally` selesai dieksekusi (tetapi pesan error tetap ditampilkan).
+
+- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:**
+  - *Debounce klik*: menunda eksekusi tetapi tidak memberikan feedback "sedang memproses",
+    pengguna masih tidak tahu apakah pesanan sedang dibuat.
+  - *Cek di server (idempotent key)*: solusi yang lebih kuat untuk production, tetapi
+    memerlukan perubahan di `server.js` yang tidak boleh diubah per aturan main.
+### Sesudah perbaikan
+
+- **Hash commit perbaikan:** ....
+- **Hasil ukur (median 3 kali):** ....
+- **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
+- **Efek samping yang muncul:** ....
