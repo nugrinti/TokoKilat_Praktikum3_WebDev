@@ -7,7 +7,7 @@ import { periksaGulir } from './gulir.js';
 export const keadaan = {
   semuaProduk: [],
   ditampilkan: [],
-  hargaVoucher: new Map(), // id produk -> harga setelah voucher
+  hargaVoucher: new Map(), 
 };
 
 export async function muatProduk() {
@@ -59,9 +59,6 @@ function buatKartu(produk) {
   return kartu;
 }
 
-// Judul produk panjangnya beda-beda (1-3 baris). Supaya harga & tombol dalam
-// satu deret sejajar rapi, tinggi judul disamakan mengikuti judul tertinggi.
-// Mengukur semua judul terlalu lambat, jadi cukup ukur sebagian sebagai contoh.
 const JUMLAH_CONTOH = 24;
 
 function samakanTinggiJudul() {
@@ -69,10 +66,10 @@ function samakanTinggiJudul() {
   let tertinggi = 0;
   for (let i = 0; i < judul.length && i < JUMLAH_CONTOH; i++) {
     const j = judul[i];
-    j.style.height = 'auto';
-    const tinggi = j.offsetHeight;
+    j.style.height = 'auto';         
+    const tinggi = j.offsetHeight;    
     if (tinggi > tertinggi) tertinggi = tinggi;
-    j.style.height = tertinggi + 'px';
+    j.style.height = tertinggi + 'px'; 
   }
   judul.forEach((j) => { j.style.height = tertinggi + 'px'; });
 }
@@ -94,9 +91,25 @@ export function renderProduk(daftar) {
 
   samakanTinggiJudul();
   $('#ringkasan').textContent = daftar.length.toLocaleString('id-ID') + ' produk ditampilkan';
+
   periksaGulir();
 }
 
 export function perbaruiHargaVoucherDiKartu() {
   renderProduk(keadaan.ditampilkan);
 }
+function throttle(func, limit) {
+  let inThrottle;
+  return function() {
+    const args = arguments;
+    const context = this;
+    if (!inThrottle) {
+      func.apply(context, args);
+      inThrottle = true;
+      setTimeout(() => inThrottle = false, limit);
+    }
+  }
+}
+window.addEventListener('scroll', throttle(() => {
+  periksaGulir();
+}, 100));

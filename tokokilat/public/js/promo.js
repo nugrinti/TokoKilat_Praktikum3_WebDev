@@ -1,8 +1,4 @@
-// Elemen kampanye: hitung mundur, teks berjalan, dan banner promo.
-
 import { $, el, tampilkanToast } from './util.js';
-
-// Flash sale berakhir tengah malam nanti (waktu perangkat).
 function akhirFlashSale() {
   const t = new Date();
   t.setHours(24, 0, 0, 0);
@@ -10,32 +6,31 @@ function akhirFlashSale() {
 }
 
 const duaDigit = (n) => String(n).padStart(2, '0');
+let intervalHitung;
+let intervalTeks;
 
-function pasangHitungMundur() {
+function jalankanHitungMundur() {
   const akhir = akhirFlashSale();
   const awal = Date.now();
   const wadah = $('#hitung-mundur');
   const garis = $('#hm-garis');
   const jam = $('#hm-jam'), menit = $('#hm-menit'), detik = $('#hm-detik'), senti = $('#hm-senti');
 
-  // 10 ms supaya angka perseratus detik terlihat mulus
-  setInterval(() => {
+  intervalHitung = setInterval(() => {
     const sisa = Math.max(akhir - Date.now(), 0);
     jam.textContent = duaDigit(Math.floor(sisa / 3600000));
     menit.textContent = duaDigit(Math.floor((sisa % 3600000) / 60000));
     detik.textContent = duaDigit(Math.floor((sisa % 60000) / 1000));
     senti.textContent = duaDigit(Math.floor((sisa % 1000) / 10));
-
-    // garis di bawah angka menyusut mengikuti sisa waktu
     const lebarPenuh = wadah.offsetWidth;
     garis.style.width = Math.round(lebarPenuh * (sisa / (akhir - awal + 1))) + 'px';
   }, 10);
 }
 
-function pasangTeksBerjalan() {
+function jalankanTeksBerjalan() {
   const teks = $('#berjalan-teks');
   let x = teks.parentElement.offsetWidth;
-  setInterval(() => {
+  intervalTeks = setInterval(() => {
     x -= 1;
     if (x < -teks.offsetWidth) x = teks.parentElement.offsetWidth;
     teks.style.left = x + 'px';
@@ -59,9 +54,22 @@ async function pasangBannerPromo() {
 
   $('#utama').prepend(banner);
 }
-
 export function pasangPromo() {
-  pasangHitungMundur();
-  pasangTeksBerjalan();
   pasangBannerPromo();
+
+  const wadahPromo = $('#hitung-mundur'); 
+  if (!wadahPromo) return;
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        jalankanHitungMundur();
+        jalankanTeksBerjalan();
+      } else {
+        clearInterval(intervalHitung);
+        clearInterval(intervalTeks);
+      }
+    });
+  });
+  observer.observe(wadahPromo.parentElement);
 }
