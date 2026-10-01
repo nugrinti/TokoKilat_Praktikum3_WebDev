@@ -27,6 +27,7 @@ function buatKartu(produk) {
   const gambar = document.createElement('img');
   gambar.src = produk.gambar;
   gambar.alt = produk.nama;
+  gambar.loading = 'lazy'; 
   media.append(gambar);
 
   const badan = el('div', 'kartu-badan');
@@ -59,22 +60,20 @@ function buatKartu(produk) {
   return kartu;
 }
 
-// Judul produk panjangnya beda-beda (1-3 baris). Supaya harga & tombol dalam
-// satu deret sejajar rapi, tinggi judul disamakan mengikuti judul tertinggi.
-// Mengukur semua judul terlalu lambat, jadi cukup ukur sebagian sebagai contoh.
 const JUMLAH_CONTOH = 24;
 
 function samakanTinggiJudul() {
-  const judul = document.querySelectorAll('.kartu-judul');
+  const judulNode = document.querySelectorAll('.kartu-judul');
+  const judulContoh = Array.from(judulNode).slice(0, JUMLAH_CONTOH);
+
+  judulContoh.forEach(j => { j.style.height = 'auto'; });
+
   let tertinggi = 0;
-  for (let i = 0; i < judul.length && i < JUMLAH_CONTOH; i++) {
-    const j = judul[i];
-    j.style.height = 'auto';
-    const tinggi = j.offsetHeight;
+  judulContoh.forEach(j => {
+    const tinggi = j.offsetHeight; 
     if (tinggi > tertinggi) tertinggi = tinggi;
-    j.style.height = tertinggi + 'px';
-  }
-  judul.forEach((j) => { j.style.height = tertinggi + 'px'; });
+  });
+  judulNode.forEach(j => { j.style.height = tertinggi + 'px'; });
 }
 
 export function renderProduk(daftar) {
@@ -94,7 +93,7 @@ export function renderProduk(daftar) {
 
   samakanTinggiJudul();
   $('#ringkasan').textContent = daftar.length.toLocaleString('id-ID') + ' produk ditampilkan';
-  periksaGulir();
+  requestAnimationFrame(periksaGulir);
 }
 
 export function perbaruiHargaVoucherDiKartu() {

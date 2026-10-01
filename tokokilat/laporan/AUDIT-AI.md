@@ -26,6 +26,35 @@ window.addEventListener('scroll', throttle(() => {
   - [ ] Memperbaiki sesuatu yang tidak berpengaruh terukur
 - **Bukti:** 
 Sebelum:
+{
+  "waktu": "2026-10-01T07:45:32.368Z",
+  "jumlahLongTask": 130,
+  "longTaskTerlama": 1036,
+  "totalBlokir": 6233,
+  "jumlahInteraksi": 1,
+  "inp": 192,
+  "inpRinci": {
+    "durasi": 192,
+    "jenis": "pointerdown",
+    "target": "?",
+    "tundaInput": 98,
+    "proses": 0,
+    "presentasi": 94
+  },
+  "limaInteraksiTerlambat": [
+    {
+      "durasi": 192,
+      "jenis": "pointerdown",
+      "target": "?",
+      "tundaInput": 98,
+      "proses": 0,
+      "presentasi": 94
+    }
+  ],
+  "cls": 0.046,
+  "frameLambat": 147,
+  "frameTerburuk": 1150
+}
 Sesudah:
 - **Mengapa AI bisa keliru di sini:** AI memberikan solusi textbook untuk event scroll, yaitu throttling atau debouncing. AI tidak tahu bahwa masalah utamanya bukan pada frekuensi pemanggilan event, melainkan pada apa yang ada di dalam fungsi tersebut (loop getBoundingClientRect yang diselingi penulisan DOM).
 - **Perbaikan yang benar menurut tim:** Menghapus event listener scroll sepenuhnya dan menggantinya dengan IntersectionObserver, serta menggunakan requestAnimationFrame untuk penulisan visual.
@@ -55,6 +84,35 @@ observer.observe(document.querySelector('.wadah-promo'));
   - [ ] Memperbaiki sesuatu yang tidak berpengaruh terukur
 - **Bukti:** 
 Sebelum:
+{
+  "waktu": "2026-10-01T07:42:52.766Z",
+  "jumlahLongTask": 155,
+  "longTaskTerlama": 1064,
+  "totalBlokir": 4028,
+  "jumlahInteraksi": 1,
+  "inp": 240,
+  "inpRinci": {
+    "durasi": 240,
+    "jenis": "pointerdown",
+    "target": "?",
+    "tundaInput": 35,
+    "proses": 0,
+    "presentasi": 205
+  },
+  "limaInteraksiTerlambat": [
+    {
+      "durasi": 240,
+      "jenis": "pointerdown",
+      "target": "?",
+      "tundaInput": 35,
+      "proses": 0,
+      "presentasi": 205
+    }
+  ],
+  "cls": 0,
+  "frameLambat": 211,
+  "frameTerburuk": 1200
+}
 Sesudah:
 - **Mengapa AI bisa keliru di sini:** AI terlalu fokus pada potongan kode JavaScript yang saya berikan di prompt. Ia tidak memiliki konteks panel Layers atau alat Paint flashing di DevTools yang menunjukkan bahwa CSS-lah penyumbang kerja main thread yang terus-menerus. AI tidak bisa "melihat" halaman berkedip merah.
 - **Perbaikan yang benar menurut tim:** Memindahkan animasi lencana ke CSS transform dan opacity (berjalan di compositor), serta mengubah setInterval menjadi requestAnimationFrame yang efisien.

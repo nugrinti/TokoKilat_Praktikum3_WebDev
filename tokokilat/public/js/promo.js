@@ -1,8 +1,4 @@
-// Elemen kampanye: hitung mundur, teks berjalan, dan banner promo.
-
 import { $, el, tampilkanToast } from './util.js';
-
-// Flash sale berakhir tengah malam nanti (waktu perangkat).
 function akhirFlashSale() {
   const t = new Date();
   t.setHours(24, 0, 0, 0);
@@ -14,50 +10,73 @@ const duaDigit = (n) => String(n).padStart(2, '0');
 function pasangHitungMundur() {
   const akhir = akhirFlashSale();
   const awal = Date.now();
-  const wadah = $('#hitung-mundur');
+  const sisaAwal = Math.max(akhir - awal, 0);
+  
   const garis = $('#hm-garis');
-  const jam = $('#hm-jam'), menit = $('#hm-menit'), detik = $('#hm-detik'), senti = $('#hm-senti');
+  if (garis) {
+    garis.style.transformOrigin = 'left center'; 
+    garis.animate(
+      [{ transform: 'scaleX(1)' }, { transform: 'scaleX(0)' }],
+      { duration: sisaAwal, easing: 'linear', fill: 'forwards' }
+    );
+  }
 
-  // 10 ms supaya angka perseratus detik terlihat mulus
-  setInterval(() => {
+  const jam = $('#hm-jam'), menit = $('#hm-menit'), detik = $('#hm-detik');
+  const senti = $('#hm-senti'); 
+
+  if (senti) senti.textContent = "00"; 
+
+  let intervalHitung = setInterval(() => {
     const sisa = Math.max(akhir - Date.now(), 0);
-    jam.textContent = duaDigit(Math.floor(sisa / 3600000));
-    menit.textContent = duaDigit(Math.floor((sisa % 3600000) / 60000));
-    detik.textContent = duaDigit(Math.floor((sisa % 60000) / 1000));
-    senti.textContent = duaDigit(Math.floor((sisa % 1000) / 10));
-
-    // garis di bawah angka menyusut mengikuti sisa waktu
-    const lebarPenuh = wadah.offsetWidth;
-    garis.style.width = Math.round(lebarPenuh * (sisa / (akhir - awal + 1))) + 'px';
-  }, 10);
+    if (jam) jam.textContent = duaDigit(Math.floor(sisa / 3600000));
+    if (menit) menit.textContent = duaDigit(Math.floor((sisa % 3600000) / 60000));
+    if (detik) detik.textContent = duaDigit(Math.floor((sisa % 60000) / 1000));
+    
+    if (sisa <= 0) clearInterval(intervalHitung);
+  }, 1000);
 }
 
 function pasangTeksBerjalan() {
   const teks = $('#berjalan-teks');
-  let x = teks.parentElement.offsetWidth;
-  setInterval(() => {
-    x -= 1;
-    if (x < -teks.offsetWidth) x = teks.parentElement.offsetWidth;
-    teks.style.left = x + 'px';
-  }, 10);
+  if (!teks) return;
+  const wadah = teks.parentElement;
+  const lebarWadah = wadah.offsetWidth;
+  const lebarTeks = teks.offsetWidth;
+
+  teks.animate([
+    { transform: `translateX(${lebarWadah}px)` },
+    { transform: `translateX(-${lebarTeks}px)` }
+  ], {
+    duration: (lebarWadah + lebarTeks) * 15,
+    iterations: Infinity
+  });
 }
 
 async function pasangBannerPromo() {
-  const respons = await fetch('/api/promo');
-  const promo = await respons.json();
+  try {
+    const respons = await fetch('/api/promo');
+    const promo = await respons.json();
 
-  const banner = el('section', 'promo-banner');
-  const teks = el('div');
-  teks.append(el('h2', '', promo.judul), el('p', '', promo.isi));
-  const tombol = el('button', '', promo.tombol);
-  tombol.type = 'button';
-  tombol.addEventListener('click', () => {
-    tampilkanToast('Syarat promo: berlaku 12 Desember, satu voucher per akun, tidak bisa digabung.');
-    if (window.Lacak) window.Lacak.kirim('promo_click', { judul: promo.judul });
-  });
-  banner.append(teks, tombol);
-
-  $('#utama').prepend(banner);
+    const banner = el('section', 'promo-banner');
+    const teks = el('div');
+    teks.append(el('h2', '', promo.judul), el('p', '', promo.isi));
+    const tombol = el('button', '', promo.tombol);
+    tombol.type = 'button';
+    tombol.addEventListener('click', () => {
+      tampilkanToast('Syarat promo: berlaku 12 Desember, satu voucher per akun, tidak bisa digabung.');
+      if (window.Lacak) window.Lacak.kirim('promo_click', { judul: promo.judul });
+    });
+    banner.append(teks, tombol);
+    const slot = $('#slot-promo');
+    if (slot) {
+      slot.innerHTML = '';
+      slot.append(banner);
+    } else {
+      $('#utama').prepend(banner);
+    }
+  } catch (err) {
+    console.error('Gagal memuat promo:', err);
+  }
 }
 
 export function pasangPromo() {

@@ -27,8 +27,8 @@ dan penyimpangan apa pun dari protokol di TUGAS.md bagian 7.
 | S2 | INP | | | <= 200 ms | |
 | S3 | Jumlah pesanan dari 3 klik | | | 1 | |
 | S4 | INP / progres tergambar bertahap? | | | | |
-| S5 | Frame > 50 ms per 10 dtk | | | <= 2 | |
-| S6 | Frame > 50 ms per 10 dtk | | | <= 2 | |
+| S5 | Frame > 50 ms per 10 dtk |>20 |>2 | <= 2 |Tidak |
+| S6 | Frame > 50 ms per 10 dtk |>20 |>2 | <= 2 |Tidak |
 
 ## 4. Temuan
 
@@ -50,7 +50,8 @@ Dugaan dari catatan serah terima, dari tiket, atau dari tim Anda sendiri yang te
 pengukuran. Sertakan angkanya. Bagian ini sama pentingnya dengan bagian temuan.
 
 ## 6. Yang belum beres dan rekomendasi
-Masalah yang tersisa, risiko, dan usulan untuk tim lain (backend, vendor SDK, desain).
+1. Animasi CSS S6 Belum Terselesaikan: Animasi UI seperti teks jam atau lencana flash sale masih berjalan di Main Thread. Rekomendasinya, tim frontend harus meninjau ulang style.css dan memindahkan semua efek animasi (seperti width, left, top, box-shadow) ke properti Compositor-friendly (transform, opacity).
+2. Rendering Berat Saat Scroll (S5): Meskipun beban JavaScript telah berkurang pada S5, tahap Rendering tetap memakan waktu 4.199 ms. Jika jumlah kartu produk akan terus bertambah seiring waktu, rekomendasinya adalah menerapkan virtual list atau windowing agar browser hanya merender elemen DOM yang tampak di layar.
 
 ## 7. Pernyataan penggunaan AI dan pembagian kerja
 Alat AI yang dipakai dan untuk apa. Kontribusi tiap anggota.
