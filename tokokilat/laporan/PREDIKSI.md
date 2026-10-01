@@ -213,3 +213,76 @@ Efek samping: Ada ruang kosong permanen jika promo gagal dimuat, slot bisa kuran
 - **Hasil ukur (median 3 kali):** ....
 - **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
 - **Efek samping yang muncul:** ....
+
+
+## P-06: Pencarian lambat per keystroke
+
+**Tiket terkait:** TK-1041
+**Tanggal dan hash commit entri ini:** 01-10-2026
+
+### Sebelum perbaikan
+
+- **Yang teramati di trace (baseline):**
+  Event handler input di pencarian.js (baris 45, callback kolom.addEventListener) tercatat sebagai satu blok eksekusi sinkron per keystroke, menurun seiring hasil pencarian makin spesifik:
+
+  Huruf "s": 3997.8ms
+  Huruf ke-2: 2160.4ms
+  Huruf ke-3: 484.0ms
+  Huruf ke-4: 403.3ms
+  Huruf ke-5: 398.8ms
+  Huruf ke-6: 393.9ms
+
+  Breakdown keystroke pertama (3997.8ms): 2462.6ms (62%) habis di Layout — 27 kali forced layout, rata-rata ~91ms per panggilan — konsisten dengan samakanTinggiJudul() yang nulis style.height='auto' lalu langsung baca offsetHeight dalam loop (layout thrashing). Sisanya ~1535ms JS murni: normalkan() dipanggil ulang per produk tiap filter, plus renderProduk() bikin ribuan elemen DOM sekaligus (keystroke pertama "s" matching ~2897 produk — hampir semua katalog, dan 2897 request gambar ditembak bersamaan dalam rentang 659ms begitu render selesai, karena <img src> diset langsung tanpa lazy-load — ini juga bukti kuat buat TK-1081, bukan cuma S0).
+
+  Dari alat ukur: INP 8808ms pada interaksi keydown di #kolom-cari, 8805ms di antaranya di fase presentasi (nunggu browser gambar ulang layar), long task terpanjang tercatat 4683ms.
+
+- **Dugaan mekanisme:**
+  (1) Tiap event input langsung memanggil terapkanSaringan() secara sinkron tanpa debounce, jadi tiap huruf = satu filter+render penuh. (2) normalkan() lama dipanggil ulang per produk (nama+merek+kategori+kota) setiap kali filter jalan dengan ~3000 produk ini berarti ribuan normalisasi string per keystroke, masuk sebagai bagian dari long task yang sama. (3) renderProduk() lama bikin seluruh elemen DOM hasil filter dalam satu task sinkron, jika hasilnya ribuan produk, ini sendiri bisa jadi long task besar. Ketiganya menumpuk di satu task yang sama, menutupi rendering opportunity dan membuat input terasa delay/hang.
+
+- **Rencana perubahan:**
+  1. Debounce 200ms di listener input, agar hanya satu filter jalan setelah user berhenti ngetik.
+  2. Precompute _cariNormal (hasil normalisasi) sekali ketika muatProduk(), simpan di tiap objek produk. Filter saat mengetik tinggal .includes() ke string yang udah jadi, tanpa normalize ulang.
+  3. Progressive render di renderProduk(): render 60 kartu pertama secara sinkron (task pertama kecil), sisanya dicicil lewat setTimeout(0) per batch 60 kartu, pakai penanda generasi biar batch lama otomatis dibatalin kalau user ngetik huruf baru sebelum batch selesai (hindari race condition / kartu nyasar).
+  4. samakanTinggiJudul() dipecah jadi tiga fase terpisah (batch write → batch read → batch write) biar forced layout cuma kejadian sekali per render, bukan berkali-kali per judul.
+  5. Pengiriman Lacak.kirim('search') di-defer ke setTimeout(0) sendiri, terpisah dari task render, biar gak nambahin durasi task yang user rasain.
+
+- **Prediksi terukur:**
+  INP S1 turun dari [ISI] ms jadi di bawah 200ms, dan tidak ada long task >100ms selama mengetik. Efek samping yang mungkin muncul: kartu yang posisinya di bawah layar pertama baru tampil 50-200ms setelah filter (karena progressive render), berpotensi kerasa kalau user scroll cepat sebelum batch selesai.
+
+- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:**
+  Web Worker buat proses filter — ditolak, karena overhead komunikasi worker (serialize/deserialize data produk) gak sepadan buat ukuran data segini, dan state (keadaan) tetap harus balik ke main thread buat render DOM.
+### Sesudah perbaikan
+
+- **Hash commit perbaikan:** ....
+- **Hasil ukur (median 3 kali):** ....
+- **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
+- **Efek samping yang muncul:** ....
+
+## P-07: Gambar lambat muncul + boros kuota
+
+**Tiket terkait:** TK-1081
+**Tanggal dan hash commit entri ini:** 01-10-2026
+
+### Sebelum perbaikan
+
+- **Yang teramati di trace (baseline):**
+  [ISI: jumlah request gambar di panel Network pas S0, dan waktu gambar terakhir selesai — bandingkan sama jumlah kartu yang kelihatan di layar pertama]
+
+- **Dugaan mekanisme:**
+  gambar.src diset langsung pas tiap kartu dibikin, buat SEMUA produk hasil render sekaligus — bukan cuma yang kelihatan di viewport. Gak ada loading="lazy" atau mekanisme tunda lain. Browser langsung nembak ratusan/ribuan request gambar bareng, yang kelihatan di layar pertama ikut ngantri rebutan bandwidth sama yang jauh di bawah dan belum tentu dilihat user. Ini juga sekaligus jawab dugaan Pak Hendra soal "server lemot" — bukan server-nya lambat, tapi jumlah request yang dipaksa browser kirim sekaligus yang jadi penyebab.
+
+- **Rencana perubahan:**
+  tambah loading="lazy" dan decoding="async" ke tiap <img>. Browser otomatis nunda fetch gambar sampe elemennya mendekati viewport, dan decode gambar gak ngeblok main thread.
+
+- **Prediksi terukur:**
+  jumlah request gambar pas S0 turun dari [ISI, kemungkinan ribuan] jadi sebanding kartu yang kelihatan di layar pertama ([ISI target]), dan waktu gambar pertama tampil lebih cepat karena gak rebutan bandwidth. Kuota data per kunjungan juga turun karena gambar yang gak pernah di-scroll gak lagi di-fetch.
+
+- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:**
+  preload semua gambar tapi pakai fetchpriority="low" — ditolak, tetep ngirim semua request di awal walau prioritas rendah, gak sesuai target "request sebanding kartu yang terlihat".
+
+### Sesudah perbaikan
+
+- **Hash commit perbaikan:** ....
+- **Hasil ukur (median 3 kali):** ....
+- **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
+- **Efek samping yang muncul:** ....
