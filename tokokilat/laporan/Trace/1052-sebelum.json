@@ -1,0 +1,53 @@
+{
+  "waktu": "2026-10-02T03:04:28.663Z",
+  "jumlahLongTask": 27,
+  "longTaskTerlama": 102,
+  "totalBlokir": 222,
+  "jumlahInteraksi": 4,
+  "inp": 136,
+  "inpRinci": {
+    "durasi": 136,
+    "jenis": "pointerup",
+    "target": "?",
+    "tundaInput": 45,
+    "proses": 0,
+    "presentasi": 92
+  },
+  "limaInteraksiTerlambat": [
+    {
+      "durasi": 136,
+      "jenis": "pointerup",
+      "target": "?",
+      "tundaInput": 45,
+      "proses": 0,
+      "presentasi": 92
+    },
+    {
+      "durasi": 112,
+      "jenis": "pointerup",
+      "target": "?",
+      "tundaInput": 36,
+      "proses": 0,
+      "presentasi": 76
+    },
+    {
+      "durasi": 88,
+      "jenis": "pointerup",
+      "target": "?",
+      "tundaInput": 8,
+      "proses": 0,
+      "presentasi": 80
+    },
+    {
+      "durasi": 56,
+      "jenis": "pointerup",
+      "target": "?",
+      "tundaInput": 10,
+      "proses": 0,
+      "presentasi": 46
+    }
+  ],
+  "cls": 0,
+  "frameLambat": 85,
+  "frameTerburuk": 167
+}
