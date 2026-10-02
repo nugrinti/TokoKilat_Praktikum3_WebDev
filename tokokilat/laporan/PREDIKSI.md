@@ -247,7 +247,7 @@ Efek samping: Ada ruang kosong permanen jika promo gagal dimuat, slot bisa kuran
   5. Pengiriman Lacak.kirim('search') di-defer ke setTimeout(0) sendiri, terpisah dari task render, biar gak nambahin durasi task yang user rasain.
 
 - **Prediksi terukur:**
-  INP S1 turun dari [ISI] ms jadi di bawah 200ms, dan tidak ada long task >100ms selama mengetik. Efek samping yang mungkin muncul: kartu yang posisinya di bawah layar pertama baru tampil 50-200ms setelah filter (karena progressive render), berpotensi kerasa kalau user scroll cepat sebelum batch selesai.
+  INP S1 turun dari 8808 ms jadi di bawah 200ms, dan tidak ada long task >100ms selama mengetik. Efek samping yang mungkin muncul: kartu yang posisinya di bawah layar pertama baru tampil 50-200ms setelah filter (karena progressive render), berpotensi kerasa kalau user scroll cepat sebelum batch selesai.
 
 - **Alternatif yang dipertimbangkan dan alasan tidak dipilih:**
   Web Worker buat proses filter — ditolak, karena overhead komunikasi worker (serialize/deserialize data produk) gak sepadan buat ukuran data segini, dan state (keadaan) tetap harus balik ke main thread buat render DOM.
@@ -266,16 +266,16 @@ Efek samping: Ada ruang kosong permanen jika promo gagal dimuat, slot bisa kuran
 ### Sebelum perbaikan
 
 - **Yang teramati di trace (baseline):**
-  [ISI: jumlah request gambar di panel Network pas S0, dan waktu gambar terakhir selesai — bandingkan sama jumlah kartu yang kelihatan di layar pertama]
+  Dari rekaman S0 (02-10-2026, kode lama): /api/produk selesai cepat (~190-280ms), bukan bottleneck. Setelah itu, membangun & nge-layout 3000 kartu sekaligus makan waktu signifikan di main thread (UpdateLayoutTree >1400ms). Secara langsung diamati di layar: dalam 10 detik pertama, belum ada satupun gambar produk yang muncul — kotak abu-abu semua, termasuk yang ada di layar pertama. Gambar baru mulai terlihat setelah beberapa menit.Jumlah baris "18" di Network tab filter Img tepat di detik ke-10 dari total 3000 request yang coba dikirim sekaligus.
 
 - **Dugaan mekanisme:**
-  gambar.src diset langsung pas tiap kartu dibikin, buat SEMUA produk hasil render sekaligus — bukan cuma yang kelihatan di viewport. Gak ada loading="lazy" atau mekanisme tunda lain. Browser langsung nembak ratusan/ribuan request gambar bareng, yang kelihatan di layar pertama ikut ngantri rebutan bandwidth sama yang jauh di bawah dan belum tentu dilihat user. Ini juga sekaligus jawab dugaan Pak Hendra soal "server lemot" — bukan server-nya lambat, tapi jumlah request yang dipaksa browser kirim sekaligus yang jadi penyebab.
+  gambar.src diset langsung pas tiap kartu dibikin, buat SEMUA produk hasil render sekaligus — bukan cuma yang kelihatan di viewport. Gak ada loading="lazy" atau mekanisme tunda lain. Server menambahkan latensi 60-300ms per gambar secara async (simulasi CDN, non-blocking — dicek di server.js, bukan di ruang lingkup yang boleh diubah). Masalah sebenarnya bukan di situ, tapi di batas koneksi paralel browser (~6 koneksi bersamaan per origin, HTTP/1.1): begitu 3000 <img src> diset sekaligus, 3000 request itu ngantri lewat cuma 6 "jalur". Total waktu sampai gambar terakhir selesai jadi ≈ (3000 ÷ 6) × 60-300ms ≈ 1,5-2,5 menit — jauh melebihi window 10 detik di protokol S0. Dalam 10 detik pertama, bahkan gambar yang kelihatan di layar ikut ngantri di belakang ribuan gambar yang belum tentu pernah di-scroll user. Ini juga sekaligus menjawab dugaan Pak Hendra soal "server lemot": servernya cepat per-request, yang lambat adalah cara frontend memaksa ribuan request bersaing di koneksi terbatas.
 
 - **Rencana perubahan:**
   tambah loading="lazy" dan decoding="async" ke tiap <img>. Browser otomatis nunda fetch gambar sampe elemennya mendekati viewport, dan decode gambar gak ngeblok main thread.
 
 - **Prediksi terukur:**
-  jumlah request gambar pas S0 turun dari [ISI, kemungkinan ribuan] jadi sebanding kartu yang kelihatan di layar pertama ([ISI target]), dan waktu gambar pertama tampil lebih cepat karena gak rebutan bandwidth. Kuota data per kunjungan juga turun karena gambar yang gak pernah di-scroll gak lagi di-fetch.
+  jumlah request gambar pas S0 turun dari 3000 jadi sebanding kartu yang kelihatan di layar pertama. Target ~22, berdasar pengukuran versi dengan loading="lazy" aktif: 22 gambar selesai dalam 749ms untuk viewport 412x915. Waktu gambar terakhir (yang kelihatan) selesai turun dari 1,5-2,5 menit jadi di bawah 1 detik, karena gak lagi rebutan 6 slot koneksi sama ribuan gambar off-screen. Kuota data per kunjungan turun drastis karena gambar yang gak pernah di-scroll gak lagi di-fetch sama sekali.
 
 - **Alternatif yang dipertimbangkan dan alasan tidak dipilih:**
   preload semua gambar tapi pakai fetchpriority="low" — ditolak, tetep ngirim semua request di awal walau prioritas rendah, gak sesuai target "request sebanding kartu yang terlihat".
