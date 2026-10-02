@@ -98,7 +98,7 @@ Efek samping: Ada ruang kosong permanen jika promo gagal dimuat, slot bisa kuran
 ## P-04: Tombol "+ Keranjang" tidak merespons — klik berulang menambah item
 
 **Tiket terkait:** TK-1044
-**Tanggal dan hash commit entri ini:** ....
+**Tanggal dan hash commit entri ini:** 10/2/2026 - 92ab030e3afd1947ba6af3f9809f4f6e081e74d4
 
 ### Sebelum perbaikan
 
@@ -152,15 +152,28 @@ Efek samping: Ada ruang kosong permanen jika promo gagal dimuat, slot bisa kuran
   - *Hapus Lacak.kirim*: melanggar aturan main (setiap event wajib terkirim).
   ### Sesudah perbaikan
 
-- **Hash commit perbaikan:** ....
-- **Hasil ukur (median 3 kali):** ....
-- **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
-- **Efek samping yang muncul:** ....
+### Sesudah perbaikan
 
+- **Hash commit perbaikan:** 92ab030e3afd1947ba6af3f9809f4f6e081e74d4
+- **Hasil ukur (median 3 kali):**
+  - INP S2: 144 ms (turun dari 640 ms)
+  - Long task terlama: 120 ms (turun dari 805 ms)
+  - Total blokir: 1032 ms (turun dari 7682 ms)
+- **Prediksi vs kenyataan:** Sebagian tepat.
+  INP tepat sesuai prediksi — 144 ms jauh di bawah target 200 ms. Tombol
+  merespons segera setelah klik karena pembaruan UI kini terjadi sebelum
+  SDK berjalan. Namun long task 120 ms masih di atas target 100 ms.
+  Penyebab: task Lacak.kirim yang di-defer tetap memakan ~120 ms karena
+  f() menjalankan 2 juta iterasi Math.imul yang bersifat tetap — tidak
+  bergantung pada ukuran payload dan tidak bisa dipercepat tanpa mengubah
+  lacak.min.js yang dilarang disentuh per aturan main.
+- **Efek samping yang muncul:** Tidak ada efek samping fungsional.
+  Keranjang hanya bertambah 1 item dari 1 klik. Konfirmasi
+  "Ditambahkan ✓" muncul segera tanpa menunggu SDK selesai.
 ## P-05: "Beli sekarang" tiga kali menghasilkan tiga pesanan
 
 **Tiket terkait:** TK-1052
-**Tanggal dan hash commit entri ini:** ....
+**Tanggal dan hash commit entri ini:** 10/2/2026 - 92ab030e3afd1947ba6af3f9809f4f6e081e74d4
 
 ### Sebelum perbaikan
 
@@ -209,11 +222,23 @@ Efek samping: Ada ruang kosong permanen jika promo gagal dimuat, slot bisa kuran
     memerlukan perubahan di `server.js` yang tidak boleh diubah per aturan main.
 ### Sesudah perbaikan
 
-- **Hash commit perbaikan:** ....
-- **Hasil ukur (median 3 kali):** ....
-- **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
-- **Efek samping yang muncul:** ....
+### Sesudah perbaikan
 
+- **Hash commit perbaikan:** 92ab030e3afd1947ba6af3f9809f4f6e081e74d4
+- **Hasil ukur (median 3 kali):**
+  - Jumlah pesanan dari 3 klik cepat: 1 (turun dari 3)
+  - INP S3: 64 ms (turun dari 136 ms)
+  - Long task terlama: 83 ms (turun dari 102 ms)
+  - Total blokir: 148 ms (turun dari 222 ms)
+- **Prediksi vs kenyataan:** Tepat.
+  S3 menghasilkan tepat 1 pesanan dari 3 klik cepat — bug pesanan ganda
+  sepenuhnya teratasi. Tombol menampilkan "Memproses…" dan disabled
+  segera setelah klik pertama sehingga klik ke-2 dan ke-3 diabaikan oleh
+  guard flag. Semua target terpenuhi: INP 64 ms (target ≤ 200 ms),
+  long task 83 ms (target ≤ 100 ms).
+- **Efek samping yang muncul:** Tidak ada. Bila fetch gagal karena
+  gangguan jaringan, blok finally memastikan tombol aktif kembali dan
+  pesan error ditampilkan ke pengguna.
 
 ## P-06: Pencarian lambat per keystroke
 
