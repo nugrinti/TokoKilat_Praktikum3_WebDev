@@ -1,0 +1,29 @@
+{
+  "waktu": "2026-10-02T11:12:33.000Z",
+  "jumlahLongTask": 65,
+  "longTaskTerlama": 120,
+  "totalBlokir": 1850,
+  "jumlahInteraksi": 1,
+  "inp": 214,
+  "inpRinci": {
+    "durasi": 214,
+    "jenis": "click",
+    "target": "button#terapkan-voucher",
+    "tundaInput": 30,
+    "proses": 70,
+    "presentasi": 114
+  },
+  "limaInteraksiTerlambat": [
+    {
+      "durasi": 214,
+      "jenis": "click",
+      "target": "button#terapkan-voucher",
+      "tundaInput": 30,
+      "proses": 70,
+      "presentasi": 114
+    }
+  ],
+  "cls": 0.03,
+  "frameLambat": 45,
+  "frameTerburuk": 320
+}

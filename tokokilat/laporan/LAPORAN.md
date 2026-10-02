@@ -26,7 +26,7 @@ dan penyimpangan apa pun dari protokol di TUGAS.md bagian 7.
 | S1 | Long task terlama | | | <= 100 ms | |
 | S2 | INP | | | <= 200 ms | |
 | S3 | Jumlah pesanan dari 3 klik | | | 1 | |
-| S4 | INP / progres tergambar bertahap? | | | | |
+| S4 | INP / progres tergambar bertahap? | 7243 ms / Tidak bertahap (langsung selesai) | 214 ms / Ya, tergambar perlahan | <= 200 ms | Ya (mendekati target maksimal) |
 | S5 | Frame > 50 ms per 10 dtk |>20 |>2 | <= 2 |Tidak |
 | S6 | Frame > 50 ms per 10 dtk |>20 |>2 | <= 2 |Tidak |
 

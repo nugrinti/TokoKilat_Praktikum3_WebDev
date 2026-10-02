@@ -286,3 +286,29 @@ Efek samping: Ada ruang kosong permanen jika promo gagal dimuat, slot bisa kuran
 - **Hasil ukur (median 3 kali):** ....
 - **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
 - **Efek samping yang muncul:** ....
+
+
+## P-08: Kalkulasi voucher memblokir Main Thread (UI Freeze)
+
+**Tiket terkait:** TK-1057
+**Tanggal dan hash commit entri ini:** 2/10/2026-909955622b5e15a6083ef49cf4e66a44611620cf
+
+### Sebelum perbaikan
+
+- **Yang teramati di trace (baseline):**
+  Pada Skenario 4, terlihat satu task raksasa (Long Task) berdurasi lebih dari 7 detik yang menahan main thread. Metrik INP meroket tajam hingga 7243 ms. Selama task ini berjalan (fase *Processing Time*), rendering pipeline sepenuhnya terblokir sehingga layar tidak ter-update dan tidak bisa merespons event input (seperti scroll atau ketikan di kolom pencarian).
+- **Dugaan mekanisme:**
+  Loop berat pada kalkulasi voucher KILAT1212 di `terapkanVoucher` dieksekusi sekaligus secara sinkron, tanpa memberikan jeda kepada event loop. Pernyataan Rudi bahwa fungsi "sudah `async`" terbukti salah kaprah secara konsep; fungsi berlabel `async` tetap akan memblokir main thread jika di dalamnya terdapat eksekusi loop komputasi sinkron secara berkelanjutan. Browser tidak mendapat *rendering opportunity* untuk memperbarui UI persentase "menghitung x%".
+- **Rencana perubahan:**
+  Memecah loop kalkulasi yang panjang menjadi *chunk* (kelompok tugas kecil) dengan memanfaatkan `setTimeout` atau `requestAnimationFrame`. Setelah sejumlah iterasi (misalnya per batch data), kontrol dikembalikan (yield) ke browser agar bisa memproses interaksi pengguna dan merender ulang teks progres.
+- **Prediksi terukur:**
+  INP untuk S4 akan turun drastis di bawah atau mendekati target 200 ms. Progres penghitungan di UI tidak lagi langsung loncat ke "selesai", melainkan bergerak bertahap, dan pengguna bisa scroll/mengetik selama proses berjalan.
+- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:**
+  - *Web Worker*: Sangat ideal untuk komputasi berat, namun memerlukan mekanisme *message passing* untuk UI update, yang mungkin dirasa berlebihan jika memecah *chunk* saja sudah mengembalikan responsivitas.
+
+### Sesudah perbaikan
+
+- **Hash commit perbaikan:** 909955622b5e15a6083ef49cf4e66a44611620cf
+- **Hasil ukur (median 3 kali):** INP turun menjadi 214 ms. Terdapat beberapa *Long Task* berukuran kecil (di bawah 120 ms), tidak lagi satu blok besar.
+- **Prediksi vs kenyataan:** Tepat. Dengan pemecahan tugas (chunking), browser mendapatkan celah di antara task untuk menjalankan event input dan mengecat ulang piksel layar (Paint).
+- **Efek samping yang muncul:** Total waktu selesainya seluruh komputasi voucher (wall-clock time) mungkin sedikit bertambah panjang akibat jeda *overhead* dari penjadwalan `setTimeout` antar chunk.
