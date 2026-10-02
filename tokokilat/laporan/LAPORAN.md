@@ -165,4 +165,9 @@ pengukuran. Sertakan angkanya. Bagian ini sama pentingnya dengan bagian temuan.
 2. Rendering Berat Saat Scroll (S5): Meskipun beban JavaScript telah berkurang pada S5, tahap Rendering tetap memakan waktu 4.199 ms. Jika jumlah kartu produk akan terus bertambah seiring waktu, rekomendasinya adalah menerapkan virtual list atau windowing agar browser hanya merender elemen DOM yang tampak di layar.
 
 ## 7. Pernyataan penggunaan AI dan pembagian kerja
-Alat AI yang dipakai dan untuk apa. Kontribusi tiap anggota.
+Alat AI yang dipakai adalah Claude, Gemini digunakan sebagai asisten penulisan untuk membuat boilerplate kode (seperti struktur IntersectionObserver dan pemisahan logika batching BACA-TULIS DOM) serta membantu menyusun draf kalimat atau tata bahasa dalam laporan ini.
+Pembagian kontribusi tiap anggota pada praktikum kali ini adalah 
+Nurahma Rahayu: Bertanggung jawab menyelesaikan tiket TK-1041, TK-1081, dan sebagian TK-1078. Memodifikasi file katalog.js dan pencarian.js, serta melakukan pengujian pada skenario ukur S0 (permintaan gambar) dan S1.   
+M. Fakhri: Bertanggung jawab menyelesaikan tiket TK-1057. Memodifikasi file harga-promo.js, kategori.js, dan util.js, serta melakukan pengujian pada skenario ukur S4.   
+Raden Muhammad Farhan: Bertanggung jawab menyelesaikan tiket TK-1044 dan TK-1052. Memodifikasi file keranjang.js dan main.js, serta melakukan pengujian pada skenario ukur S2 dan S3.   
+Hana Zahirah: Bertanggung jawab menyelesaikan tiket TK-1063, TK-1070, dan sebagian TK-1078. Memodifikasi file gulir.js, promo.js, toko.css, dan index.html, serta melakukan pengujian pada skenario ukur S5, S6.
