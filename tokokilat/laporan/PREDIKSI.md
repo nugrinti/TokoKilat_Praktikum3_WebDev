@@ -9,7 +9,7 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 ## P-01:Scroll memicu kerja main thread berat tiap event
 
 **Tiket terkait:** TK-1063
-**Tanggal dan hash commit entri ini:** ....
+**Tanggal dan hash commit entri ini:** 01/10/2026 - 42362f5678c7db96740203f4e8cc3e74382f84e6
 
 ### Sebelum perbaikan
 
@@ -31,15 +31,15 @@ Efek samping: Impresi telat ~300 ms, pull-to-refresh mati di seluruh halaman, da
 3. Virtualisasi daftar: Berada di luar cakupan file yang saya kerjakan
 ### Sesudah perbaikan
 
-- **Hash commit perbaikan:** ....
-- **Hasil ukur (median 3 kali):** ....
-- **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
-- **Efek samping yang muncul:** ....
+- **Hash commit perbaikan:** 01/10/2026 - 0a56639cd9160507dbed4d5df8f05d5fce0a6f5e
+- **Hasil ukur (median 3 kali):**  Waktu Scripting turun dari 2.322 ms menjadi 706 ms. Frame > 50 ms turun dari > 20 menjadi 3-5 kali per 10 detik (target <= 2 belum sepenuhnya tercapai).
+- **Prediksi vs kenyataan:** Sebagian. Prediksi bahwa penghapusan layout thrashing akan memuluskan scroll sepenuhnya meleset. Beban JS (Scripting) memang hilang, tetapi bottleneck berpindah ke tahap Rendering (memakan waktu 5.086 ms). Menggambar ulang ratusan elemen DOM secara bersamaan saat digulir tetap membebani Main Thread.
+- **Efek samping yang muncul:** Data pelacakan impresi terkirim secara batch dengan jeda 1 detik (debounce), dan interaksi pull-to-refresh bawaan dinonaktifkan.
 
 ## P-02:Animasi dan timer berjalan terus saat halaman diam
 
 **Tiket terkait:** TK-1070
-**Tanggal dan hash commit entri ini:** ....
+**Tanggal dan hash commit entri ini:** 01/10/2026 - 42362f5678c7db96740203f4e8cc3e74382f84e6
 
 ### Sebelum perbaikan
 
@@ -61,15 +61,15 @@ Efek samping: Memori GPU berpotensi naik karena layer bertambah, kecepatan/bentu
 3. Hentikan animasi via IntersectionObserver: Disimpan sebagai cadangan jika layer GPU terlalu berat.
 ### Sesudah perbaikan
 
-- **Hash commit perbaikan:** ....
-- **Hasil ukur (median 3 kali):** ....
-- **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
-- **Efek samping yang muncul:** ....
+- **Hash commit perbaikan:** 01/10/2026 - 0a56639cd9160507dbed4d5df8f05d5fce0a6f5e
+- **Hasil ukur (median 3 kali):** Waktu Scripting turun menjadi 201 ms. Aktivitas Main Thread saat halaman diam mendekati 0 ms (siklus Painting dan Rendering berulang hilang).
+- **Prediksi vs kenyataan:** Sebagian. Menyerahkan animasi murni ke Compositor Thread (menggunakan transform dan opacity) dan menurunkan frekuensi pembaruan DOM untuk teks jam terbukti mengistirahatkan CPU sepenuhnya saat layar statis.
+- **Efek samping yang muncul:** Angka perseratus detik (senti) dihilangkan sepenuhnya demi menghemat siklus CPU. Konsumsi memori GPU (VRAM) sedikit meningkat karena komponen lencana dipromosikan menjadi layer kompositor mandiri.
 
 ## P-03: Halaman bergeser saat banner promo dan konten lain muncul terlambat
 
 **Tiket terkait:** TK-1078
-**Tanggal dan hash commit entri ini:** ....
+**Tanggal dan hash commit entri ini:** 01/10/2026 - 42362f5678c7db96740203f4e8cc3e74382f84e6
 
 ### Sebelum perbaikan
 
@@ -90,10 +90,10 @@ Efek samping: Ada ruang kosong permanen jika promo gagal dimuat, slot bisa kuran
 3. Pakai position: fixed / overlay: Mengubah total desain awal tanpa alasan kuat.
 ### Sesudah perbaikan
 
-- **Hash commit perbaikan:** ....
-- **Hasil ukur (median 3 kali):** ....
-- **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
-- **Efek samping yang muncul:** ....
+- **Hash commit perbaikan:** 01/10/2026 - 0a56639cd9160507dbed4d5df8f05d5fce0a6f5e
+- **Hasil ukur (median 3 kali):** Skor CLS (Cumulative Layout Shift) turun tajam dari 0,85 menjadi 0,04.
+- **Prediksi vs kenyataan:** Tepat. Penambahan placeholder statis #slot-promo dengan min-height: 120px berhasil mencegah elemen di bawahnya terdorong saat respons /api/promo selesai. Penggunaan tabular-nums menstabilkan lebar teks hitung mundur.
+- **Efek samping yang muncul:** Terdapat ruang kosong permanen (120px) yang terlihat jelas selama beberapa milidetik pertama, atau akan terus kosong jika koneksi pengguna gagal memuat banner.
 
 ## P-04: Tombol "+ Keranjang" tidak merespons — klik berulang menambah item
 
@@ -221,9 +221,6 @@ Efek samping: Ada ruang kosong permanen jika promo gagal dimuat, slot bisa kuran
   - *Cek di server (idempotent key)*: solusi yang lebih kuat untuk production, tetapi
     memerlukan perubahan di `server.js` yang tidak boleh diubah per aturan main.
 ### Sesudah perbaikan
-
-### Sesudah perbaikan
-
 - **Hash commit perbaikan:** 92ab030e3afd1947ba6af3f9809f4f6e081e74d4
 - **Hasil ukur (median 3 kali):**
   - Jumlah pesanan dari 3 klik cepat: 1 (turun dari 3)
