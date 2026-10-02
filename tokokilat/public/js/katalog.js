@@ -1,6 +1,6 @@
 // Katalog: menyimpan data produk dan menggambar kisi kartu produk.
 
-import { $, el, formatRupiah, formatRibuan, hargaSetelahDiskon } from './util.js';
+import { $, ambilJson, el, formatRupiah, formatRibuan, hargaSetelahDiskon } from './util.js';
 import { tambahKeKeranjang, beliSekarang } from './keranjang.js';
 import { periksaGulir, observasiKartu } from './gulir.js';
 
@@ -11,8 +11,7 @@ export const keadaan = {
 };
 
 export async function muatProduk() {
-  const respons = await fetch('/api/produk');
-  keadaan.semuaProduk = await respons.json();
+  keadaan.semuaProduk = await ambilJson('/api/produk');
 
   // Pre-compute teks pencarian yang sudah dinormalkan.
   //

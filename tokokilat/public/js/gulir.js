@@ -71,6 +71,10 @@ function jadwalkanStatus() {
   requestAnimationFrame(gambarStatus);
 }
 
+export function observasiKartu(kartu) {
+  pengamat.observe(kartu);
+}
+
 export function periksaGulir() {
   pengamat.disconnect();
   document.querySelectorAll('.kartu').forEach((kartu) => pengamat.observe(kartu));

@@ -1,4 +1,4 @@
-import { $, el, tampilkanToast } from './util.js';
+import { $, ambilJson, el, tampilkanToast } from './util.js';
 function akhirFlashSale() {
   const t = new Date();
   t.setHours(24, 0, 0, 0);
@@ -31,9 +31,9 @@ function pasangHitungMundur() {
     if (jam) jam.textContent = duaDigit(Math.floor(sisa / 3600000));
     if (menit) menit.textContent = duaDigit(Math.floor((sisa % 3600000) / 60000));
     if (detik) detik.textContent = duaDigit(Math.floor((sisa % 60000) / 1000));
-    
+    if (senti) senti.textContent = duaDigit(Math.floor((sisa % 1000) / 10));
     if (sisa <= 0) clearInterval(intervalHitung);
-  }, 1000);
+  }, 10);
 }
 
 function pasangTeksBerjalan() {
@@ -54,8 +54,7 @@ function pasangTeksBerjalan() {
 
 async function pasangBannerPromo() {
   try {
-    const respons = await fetch('/api/promo');
-    const promo = await respons.json();
+    const promo = await ambilJson('/api/promo');
 
     const banner = el('section', 'promo-banner');
     const teks = el('div');

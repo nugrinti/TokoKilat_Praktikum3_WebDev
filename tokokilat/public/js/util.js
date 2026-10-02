@@ -27,6 +27,45 @@ export function hargaSetelahDiskon(produk) {
   return Math.round((produk.harga * (100 - produk.diskon)) / 100 / 100) * 100;
 }
 
+export function ambilJson(url, opsi = {}) {
+  const pengaturan = { method: 'GET', headers: {}, ...opsi };
+
+  if (typeof fetch === 'function') {
+    return fetch(url, pengaturan).then(async (respons) => {
+      if (!respons.ok) {
+        const teks = await respons.text().catch(() => '');
+        throw new Error(teks || 'Request gagal: ' + respons.status);
+      }
+      return respons.json();
+    });
+  }
+
+  return new Promise((resolve, reject) => {
+    if (typeof XMLHttpRequest === 'undefined') {
+      reject(new Error('Browser tidak mendukung XMLHttpRequest dan fetch.'));
+      return;
+    }
+
+    const xhr = new XMLHttpRequest();
+    xhr.open(pengaturan.method || 'GET', url, true);
+
+    Object.entries(pengaturan.headers || {}).forEach(([k, v]) => xhr.setRequestHeader(k, v));
+    xhr.onload = () => {
+      if (xhr.status < 200 || xhr.status >= 300) {
+        reject(new Error('Request gagal: ' + xhr.status));
+        return;
+      }
+      try {
+        resolve(JSON.parse(xhr.responseText || 'null'));
+      } catch (_err) {
+        reject(new Error('Respons bukan JSON yang valid.'));
+      }
+    };
+    xhr.onerror = () => reject(new Error('Gagal menghubungi server.'));
+    xhr.send(pengaturan.body || null);
+  });
+}
+
 // Salinan dalam (deep copy) supaya objek konfigurasi tidak termutasi.
 export function salinDalam(objek) {
   return JSON.parse(JSON.stringify(objek));

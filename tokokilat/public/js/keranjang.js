@@ -1,7 +1,7 @@
 // Keranjang belanja, riwayat penelusuran, dan "Beli sekarang".
 // Semua disimpan di localStorage supaya tetap ada walau halaman dimuat ulang.
 
-import { $, el, formatRupiah, hargaSetelahDiskon, salinDalam, tampilkanToast } from './util.js';
+import { $, ambilJson, el, formatRupiah, hargaSetelahDiskon, salinDalam, tampilkanToast } from './util.js';
 
 const KUNCI_KERANJANG = 'tk_keranjang';
 const KUNCI_RIWAYAT   = 'tk_riwayat';
@@ -117,12 +117,11 @@ export async function beliSekarang(produk, tombol) {
   }, 0);
 
   try {
-    const respons = await fetch('/api/pesanan', {
+    const pesanan = await ambilJson('/api/pesanan', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ produkId: produk.id, nama: produk.nama }),
     });
-    const pesanan = await respons.json();
 
     tombol.textContent = 'Dipesan ✓';
     tampilkanToast('Pesanan ' + pesanan.id + ' dibuat: ' + produk.nama);
@@ -140,8 +139,7 @@ export async function beliSekarang(produk, tombol) {
 }
 
 export async function perbaruiLencanaPesanan() {
-  const respons = await fetch('/api/pesanan');
-  const pesanan = await respons.json();
+  const pesanan = await ambilJson('/api/pesanan');
   $('#lencana-pesanan').textContent = pesanan.length;
   return pesanan;
 }
