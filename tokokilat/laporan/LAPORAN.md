@@ -8,6 +8,7 @@ Anggota:
 4. Raden Muhammad Farhan Fauzan - 241524059 
 Tanggal:25/09/2026
 Panjang maksimal setara 6 halaman (tidak termasuk lampiran gambar).
+link github : https://github.com/nugrinti/TokoKilat_Praktikum3_WebDev 
 
 ## 1. Ringkasan eksekutif (maks. 150 kata)
 Apa masalah terbesar, apa yang dilakukan, berapa hasilnya. Tulis untuk manajer produk, bukan untuk engineer.
